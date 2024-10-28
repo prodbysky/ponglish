@@ -25,6 +25,9 @@ static Rectangle player_2 = {
 };
 static Vector2 player_2_velocity = {0};
 
+static Vector2 ball_pos   = {400, 400};
+static Vector2 ball_speed = {300, 300};
+
 static Camera2D camera = {0};
 
 static bool scored      = false;
@@ -33,27 +36,28 @@ static float count_down = 0;
 
 static Sound player_bounce = {0};
 static Sound side_bounce   = {0};
+static float i             = 0;
 void update_players(Rectangle* p_1, Rectangle* p_2);
 void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
                  const Rectangle* p_2);
+void draw_waiting_screen();
+void draw_entities();
 
 int main() {
     InitWindow(WINDOW_W, WINDOW_H, "Ponglish");
     InitAudioDevice();
     DisableCursor();
-    SetTargetFPS(60);
-    int i = 0;
+    SetTargetFPS(120);
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
 
     player_bounce = LoadSound("player_bounce.wav");
     side_bounce   = LoadSound("side_bounce.wav");
 
     Texture2D background = LoadTexture("background.png");
 
-    Vector2 ball_pos   = {200, 400};
-    Vector2 ball_speed = {300, 300};
-    camera.zoom        = 1;
-    camera.target      = (Vector2) {400, 400};
-    camera.offset      = (Vector2) {400, 400};
+    camera.zoom   = 1;
+    camera.target = (Vector2) {400, 400};
+    camera.offset = (Vector2) {400, 400};
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -68,41 +72,24 @@ int main() {
         camera.rotation = sinf(i / 50.0) / 2.0;
 
         ClearBackground(GetColor(0x181818ff));
-        DrawTexture(background, 0, 0, ColorFromHSV(i % 360, 0.5, 0.5));
+        DrawTexture(background, 0, 0, ColorFromHSV((int) i % 360, 0.5, 0.5));
         if (!scored) {
+            draw_entities();
             if (count_down > 0) {
-                DrawText(TextFormat("%.2f", count_down), 200,
-                         sinf(i / 10.0) * 10 + 200, 34, WHITE);
-                count_down -= GetFrameTime();
-                DrawLineEx(
-                    camera.offset,
-                    Vector2Add(camera.offset, Vector2Scale(ball_speed, 0.25)),
-                    10, WHITE);
+                draw_waiting_screen();
             } else {
                 DrawText(TextFormat("%d:%d", (int) scores.x, (int) scores.y),
                          380, 400, 36, WHITE);
                 update_ball(&ball_pos, &ball_speed, &player_1, &player_2);
             }
             update_players(&player_1, &player_2);
-
-            DrawRectangleRec((Rectangle) {.x = player_1.x,
-                                          .y = player_1.y + player_1_velocity.y,
-                                          .width  = player_1.width,
-                                          .height = player_1.height},
-                             ColorFromHSV(0, 0, 0.75));
-            DrawRectangleRec((Rectangle) {.x = player_2.x,
-                                          .y = player_2.y + player_2_velocity.y,
-                                          .width  = player_2.width,
-                                          .height = player_2.height},
-                             ColorFromHSV(0, 0, 0.75));
-            DrawCircleV(ball_pos, 20, WHITE);
         } else {
             DrawText("Press space to continue!", 200, sinf(i / 10.0) * 10 + 200,
                      34, WHITE);
         }
         EndMode2D();
         EndDrawing();
-        i++;
+        i += GetFrameTime() * 10;
     }
 
     CloseWindow();
@@ -136,9 +123,10 @@ void reset_ball(Vector2* ball_pos, Vector2* ball_speed) {
     if (ball_speed->y < 0) {
         scores.y++;
     } else {
-
         scores.x++;
     }
+    ball_speed->x  = (ball_speed->x * 100) / 100;
+    ball_speed->y  = (ball_speed->y * 100) / 100;
     ball_speed->x *= -1;
     ball_speed->y *= -1;
     scored         = true;
@@ -161,17 +149,46 @@ void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
 
     if (CheckCollisionCircleRec(next_ball_pos, 20, *p_1)) {
         ball_speed->y       *= -1;
+        *ball_speed          = Vector2Scale(*ball_speed, 1.025);
         player_1_velocity.y  = 10;
         PlaySound(player_bounce);
     }
     if (CheckCollisionCircleRec(next_ball_pos, 20, *p_2)) {
         ball_speed->y       *= -1;
+        *ball_speed          = Vector2Scale(*ball_speed, 1.025);
         player_2_velocity.y  = -10;
         PlaySound(player_bounce);
     }
-    player_1_velocity.y /= 1.05;
-    player_2_velocity.y /= 1.05;
+    player_1_velocity.y /= 1.3;
+    player_2_velocity.y /= 1.3;
 
     *ball_pos =
         Vector2Add(*ball_pos, Vector2Scale(*ball_speed, GetFrameTime()));
+}
+
+void draw_waiting_screen() {
+
+    DrawText(TextFormat("%.2f", count_down), 200, sinf(i / 10.0) * 10 + 200, 34,
+             WHITE);
+    count_down -= GetFrameTime();
+    DrawLineEx(camera.offset,
+               Vector2Add(camera.offset, Vector2Scale(ball_speed, 0.25)), 1,
+               WHITE);
+}
+
+void draw_entities() {
+    DrawRectangleRoundedLines(
+        (Rectangle) {.x      = player_1.x,
+                     .y      = player_1.y + player_1_velocity.y,
+                     .width  = player_1.width,
+                     .height = player_1.height},
+        0.5, 10, 1, ColorFromHSV(0, 0, 0.75));
+    DrawRectangleRoundedLines(
+        (Rectangle) {.x      = player_2.x,
+                     .y      = player_2.y + player_2_velocity.y,
+                     .width  = player_2.width,
+                     .height = player_2.height},
+        0.5, 10, 1, ColorFromHSV(0, 0, 0.75));
+    DrawCircleLinesV(ball_pos, 20, WHITE);
+    // DrawCircleV(ball_pos, 20, WHITE);
 }
