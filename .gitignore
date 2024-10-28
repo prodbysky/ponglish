@@ -1,1 +1,6 @@
 main
+SpaceMono.h
+background.h
+bin2c
+player_bounce.h
+side_bounce.h

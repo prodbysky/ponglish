@@ -1,3 +1,8 @@
+#include "SpaceMono.h"
+#include "background.h"
+#include "player_bounce.h"
+#include "side_bounce.h"
+
 #include <math.h>
 #include <raylib.h>
 #include <raymath.h>
@@ -37,8 +42,8 @@ static bool scored      = false;
 static Vector2 scores   = {.x = 0, .y = 0};
 static float count_down = 0;
 
-static Sound player_bounce = {0};
-static Sound side_bounce   = {0};
+static Sound player_bounce_sound = {0};
+static Sound side_bounce_sound   = {0};
 
 static Font font = {0};
 static float i   = 0;
@@ -56,11 +61,16 @@ int main() {
     SetTargetFPS(120);
     SetConfigFlags(FLAG_MSAA_4X_HINT);
 
-    player_bounce = LoadSound("player_bounce.wav");
-    side_bounce   = LoadSound("side_bounce.wav");
-    font          = LoadFontEx("SpaceMono.ttf", 96, NULL, 255);
+    side_bounce_sound = LoadSoundFromWave(
+        LoadWaveFromMemory(".wav", side_bounce, sizeof(side_bounce)));
+    player_bounce_sound = LoadSoundFromWave(
+        LoadWaveFromMemory(".wav", player_bounce, sizeof(side_bounce)));
 
-    Texture2D background = LoadTexture("background.png");
+    font =
+        LoadFontFromMemory(".ttf", SpaceMono, sizeof(SpaceMono), 96, NULL, 255);
+
+    Texture2D background_image = LoadTextureFromImage(
+        LoadImageFromMemory(".png", background, sizeof(background)));
 
     camera.zoom   = 1;
     camera.target = (Vector2) {400, 400};
@@ -79,7 +89,8 @@ int main() {
         camera.rotation = sinf(i / 50.0) / 2.0;
 
         ClearBackground(GetColor(0x181818ff));
-        DrawTexture(background, 0, 0, ColorFromHSV((int) i % 360, 0.5, 0.5));
+        DrawTexture(background_image, 0, 0,
+                    ColorFromHSV((int) i % 360, 0.5, 0.5));
         if (!scored) {
             draw_entities();
             if (count_down > 0) {
@@ -144,7 +155,7 @@ void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
 
     if (next_ball_pos.x - 15 <= 0 || next_ball_pos.x + 15 >= 800) {
         ball_speed->x *= -1;
-        PlaySound(side_bounce);
+        PlaySound(side_bounce_sound);
     }
     if (next_ball_pos.y - 15 <= 0 || next_ball_pos.y + 15 >= 800) {
         reset_ball(ball_pos, ball_speed);
@@ -155,13 +166,13 @@ void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
         ball_speed->y       *= -1;
         *ball_speed          = Vector2Scale(*ball_speed, 1.025);
         player_1_velocity.y  = 10;
-        PlaySound(player_bounce);
+        PlaySound(player_bounce_sound);
     }
     if (CheckCollisionCircleRec(next_ball_pos, 20, *p_2)) {
         ball_speed->y       *= -1;
         *ball_speed          = Vector2Scale(*ball_speed, 1.025);
         player_2_velocity.y  = -10;
-        PlaySound(player_bounce);
+        PlaySound(player_bounce_sound);
     }
     player_1_velocity.y /= 1.3;
     player_2_velocity.y /= 1.3;
