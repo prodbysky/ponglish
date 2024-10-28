@@ -11,4 +11,4 @@ build_assets () {
 
 
 build_assets
-gcc main.c -o main -Wall -Wextra --pedantic -lraylib -lm
+gcc main.c -o main -Wall -Wextra --pedantic -l:libraylib.a -lm

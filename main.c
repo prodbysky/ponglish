@@ -98,7 +98,7 @@ int main() {
             } else {
                 DrawTextEx(
                     font, TextFormat("%d:%d", (int) scores.x, (int) scores.y),
-                    (Vector2) {380, sinf(i / 5.0) * 10 + 400}, 36, 5, WHITE);
+                    (Vector2) {380, sinf(i / 5.0) * 10 + 400}, 48, 5, WHITE);
                 update_ball(&ball_pos, &ball_speed, &player_1, &player_2);
             }
             update_players(&player_1, &player_2);
@@ -174,8 +174,8 @@ void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
         player_2_velocity.y  = -10;
         PlaySound(player_bounce_sound);
     }
-    player_1_velocity.y /= 1.3;
-    player_2_velocity.y /= 1.3;
+    player_1_velocity.y /= 1.01;
+    player_2_velocity.y /= 1.01;
 
     *ball_pos =
         Vector2Add(*ball_pos, Vector2Scale(*ball_speed, GetFrameTime()));
@@ -197,12 +197,12 @@ void draw_entities() {
                      .y      = player_1.y + player_1_velocity.y,
                      .width  = player_1.width,
                      .height = player_1.height},
-        0.5, 10, 1, ColorFromHSV(0, 0, 0.75));
+        0.5, 10, 5, ColorFromHSV(0, 0, 0.75));
     DrawRectangleRoundedLines(
         (Rectangle) {.x      = player_2.x,
                      .y      = player_2.y + player_2_velocity.y,
                      .width  = player_2.width,
                      .height = player_2.height},
-        0.5, 10, 1, ColorFromHSV(0, 0, 0.75));
+        0.5, 10, 5, ColorFromHSV(0, 0, 0.75));
     DrawCircleLinesV(ball_pos, 20, WHITE);
 }
