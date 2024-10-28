@@ -1,6 +1,9 @@
 #include <math.h>
 #include <raylib.h>
 #include <raymath.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <time.h>
 
 enum {
     WINDOW_W = 800,
@@ -36,7 +39,9 @@ static float count_down = 0;
 
 static Sound player_bounce = {0};
 static Sound side_bounce   = {0};
-static float i             = 0;
+
+static Font font = {0};
+static float i   = 0;
 void update_players(Rectangle* p_1, Rectangle* p_2);
 void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
                  const Rectangle* p_2);
@@ -44,6 +49,7 @@ void draw_waiting_screen();
 void draw_entities();
 
 int main() {
+    srand(time(NULL));
     InitWindow(WINDOW_W, WINDOW_H, "Ponglish");
     InitAudioDevice();
     DisableCursor();
@@ -52,6 +58,7 @@ int main() {
 
     player_bounce = LoadSound("player_bounce.wav");
     side_bounce   = LoadSound("side_bounce.wav");
+    font          = LoadFontEx("SpaceMono.ttf", 96, NULL, 255);
 
     Texture2D background = LoadTexture("background.png");
 
@@ -78,14 +85,17 @@ int main() {
             if (count_down > 0) {
                 draw_waiting_screen();
             } else {
-                DrawText(TextFormat("%d:%d", (int) scores.x, (int) scores.y),
-                         380, 400, 36, WHITE);
+                DrawTextEx(
+                    font, TextFormat("%d:%d", (int) scores.x, (int) scores.y),
+                    (Vector2) {380, sinf(i / 5.0) * 10 + 400}, 36, 5, WHITE);
                 update_ball(&ball_pos, &ball_speed, &player_1, &player_2);
             }
             update_players(&player_1, &player_2);
         } else {
-            DrawText("Press space to continue!", 200, sinf(i / 10.0) * 10 + 200,
-                     34, WHITE);
+            DrawRectangle(-200, -200, 1200, 1200, GetColor(0x00000077));
+            DrawTextEx(font, "Press space to continue!",
+                       (Vector2) {125, sinf(i / 10.0) * 10 + 400}, 48, 5,
+                       WHITE);
         }
         EndMode2D();
         EndDrawing();
@@ -96,41 +106,35 @@ int main() {
 }
 
 void update_players(Rectangle* p_1, Rectangle* p_2) {
-    if (IsKeyDown(KEY_A)) {
-        player_1_velocity.x += PLAYER_SPEED * GetFrameTime();
-    }
-    if (IsKeyDown(KEY_D)) {
-        player_1_velocity.x -= PLAYER_SPEED * GetFrameTime();
-    }
-    if (IsKeyDown(KEY_LEFT)) {
-        player_2_velocity.x += PLAYER_SPEED * GetFrameTime();
-    }
-    if (IsKeyDown(KEY_RIGHT)) {
-        player_2_velocity.x -= PLAYER_SPEED * GetFrameTime();
-    }
+    player_1_velocity.x += PLAYER_SPEED * GetFrameTime() * IsKeyDown(KEY_A);
+    player_1_velocity.x -= PLAYER_SPEED * GetFrameTime() * IsKeyDown(KEY_D);
+    player_2_velocity.x += PLAYER_SPEED * GetFrameTime() * IsKeyDown(KEY_LEFT);
+    player_2_velocity.x -= PLAYER_SPEED * GetFrameTime() * IsKeyDown(KEY_RIGHT);
+
     player_1_velocity.x =
         Clamp(player_1_velocity.x, -PLAYER_MAX_SPEED, PLAYER_MAX_SPEED);
     player_2_velocity.x =
         Clamp(player_2_velocity.x, -PLAYER_MAX_SPEED, PLAYER_MAX_SPEED);
+
     p_1->x               = Clamp(p_1->x - player_1_velocity.x, 0, 600);
     p_2->x               = Clamp(p_2->x - player_2_velocity.x, 0, 600);
-    player_1_velocity.x /= 1.3;
-    player_2_velocity.x /= 1.3;
+    player_1_velocity.x /= 1.2;
+    player_2_velocity.x /= 1.2;
 }
 void reset_ball(Vector2* ball_pos, Vector2* ball_speed) {
-    ball_pos->x = 400;
-    ball_pos->y = 400;
+    static const int speeds[] = {-300, 300};
+    ball_pos->x               = 400;
+    ball_pos->y               = 400;
     if (ball_speed->y < 0) {
         scores.y++;
     } else {
         scores.x++;
     }
-    ball_speed->x  = (ball_speed->x * 100) / 100;
-    ball_speed->y  = (ball_speed->y * 100) / 100;
-    ball_speed->x *= -1;
-    ball_speed->y *= -1;
-    scored         = true;
-    count_down     = 5;
+
+    ball_speed->x = speeds[rand() % 2];
+    ball_speed->y = speeds[rand() % 2];
+    scored        = true;
+    count_down    = 3;
 }
 
 void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
@@ -168,8 +172,8 @@ void update_ball(Vector2* ball_pos, Vector2* ball_speed, const Rectangle* p_1,
 
 void draw_waiting_screen() {
 
-    DrawText(TextFormat("%.2f", count_down), 200, sinf(i / 10.0) * 10 + 200, 34,
-             WHITE);
+    DrawTextEx(font, TextFormat("%.1f", count_down),
+               (Vector2) {350, sinf(i / 10.0) * 10 + 600}, 60, 5, WHITE);
     count_down -= GetFrameTime();
     DrawLineEx(camera.offset,
                Vector2Add(camera.offset, Vector2Scale(ball_speed, 0.25)), 1,
@@ -190,5 +194,4 @@ void draw_entities() {
                      .height = player_2.height},
         0.5, 10, 1, ColorFromHSV(0, 0, 0.75));
     DrawCircleLinesV(ball_pos, 20, WHITE);
-    // DrawCircleV(ball_pos, 20, WHITE);
 }
